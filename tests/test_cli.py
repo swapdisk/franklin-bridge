@@ -40,6 +40,7 @@ def test_main_healthy_returns_zero(monkeypatch, capsys):
     assert "Preflight PASSED" in out
     assert "Conversion plan" in out
     assert "Backup (dry-run preview)" in out
+    assert "Partitioning (dry-run preview)" in out
 
 
 def test_main_apply_without_confirmation_aborts(monkeypatch, capsys):

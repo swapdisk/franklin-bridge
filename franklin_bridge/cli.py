@@ -19,6 +19,7 @@ from .backup import execute_backup, plan_backup
 from .executor import Executor
 from .inventory import build_facts
 from .model import DEFAULT_ESP_SIZE_BYTES, EFI_PACKAGES
+from .partition import execute_partitioning
 from .plan import build_plan
 from .probe import Probe
 from .report import render_inventory, render_plan, render_validation
@@ -117,29 +118,41 @@ def main(argv=None):
     backup_dir = _backup_dir(args.backup_dir)
 
     if args.dry_run:
+        dry = Executor(dry_run=True)
         print("")
         print("== Backup (dry-run preview) ==")
-        execute_backup(Executor(dry_run=True), plan_backup(facts, backup_dir))
+        execute_backup(dry, plan_backup(facts, backup_dir))
+        print("")
+        print("== Partitioning (dry-run preview) ==")
+        execute_partitioning(dry, facts, plan)
         return 0
 
     # Apply mode.
     print("")
-    if not confirm("Proceed with changes, starting with a safety backup?",
-                   args.yes):
+    prompt = ("This will MODIFY %s: take a safety backup, then convert the "
+              "partition table to GPT and create new partitions. Proceed?"
+              % facts.disk.path)
+    if not confirm(prompt, args.yes):
         print("Aborted: no confirmation given "
               "(use --yes for non-interactive runs).")
         return 1
 
+    executor = Executor(dry_run=False)
+
     print("")
     print("== Phase 2: safety backup ==")
-    summary = execute_backup(Executor(dry_run=False), plan_backup(facts, backup_dir))
-    print("")
+    summary = execute_backup(executor, plan_backup(facts, backup_dir))
     print("Backup complete: %s" % summary["backup_dir"])
     if summary["skipped"]:
         print("  (not present, skipped: %s)" % ", ".join(summary["skipped"]))
+
     print("")
-    print("Note: the conversion itself (phases 3-8) is not implemented yet; "
-          "no changes were made to the disk.")
+    print("== Phase 3: partition surgery ==")
+    execute_partitioning(executor, facts, plan)
+
+    print("")
+    print("Note: phases 4-8 are not implemented yet. A reboot will be required "
+          "once the conversion is complete.")
     return 0
 
 
