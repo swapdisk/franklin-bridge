@@ -1,0 +1,39 @@
+{
+   "filesystems": [
+      {"target": "/", "source": "/dev/mapper/rhel-root",
+         "children": [
+            {"target": "/sys", "source": "sysfs",
+               "children": [
+                  {"target": "/sys/kernel/security", "source": "securityfs"},
+                  {"target": "/sys/fs/cgroup", "source": "tmpfs",
+                     "children": [
+                        {"target": "/sys/fs/cgroup/systemd", "source": "cgroup"},
+                        {"target": "/sys/fs/cgroup/devices", "source": "cgroup"},
+                        {"target": "/sys/fs/cgroup/memory", "source": "cgroup"}
+                     ]
+                  },
+                  {"target": "/sys/fs/selinux", "source": "selinuxfs"}
+               ]
+            },
+            {"target": "/proc", "source": "proc",
+               "children": [
+                  {"target": "/proc/sys/fs/binfmt_misc", "source": "systemd-1"}
+               ]
+            },
+            {"target": "/dev", "source": "devtmpfs",
+               "children": [
+                  {"target": "/dev/shm", "source": "tmpfs"},
+                  {"target": "/dev/pts", "source": "devpts"}
+               ]
+            },
+            {"target": "/run", "source": "tmpfs",
+               "children": [
+                  {"target": "/run/user/1000", "source": "tmpfs"}
+               ]
+            },
+            {"target": "/boot", "source": "/dev/vda1"},
+            {"target": "/var/lib/nfs/rpc_pipefs", "source": "sunrpc"}
+         ]
+      }
+   ]
+}

@@ -1,0 +1,3 @@
+package grub2-efi-x64 is not installed
+package shim-x64 is not installed
+grub2-pc-2.02-170.el8_10.3.x86_64

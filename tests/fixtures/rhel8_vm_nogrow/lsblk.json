@@ -1,0 +1,16 @@
+{
+   "blockdevices": [
+      {"name": "sr0", "type": "rom", "size": "1073741312", "fstype": null, "uuid": null, "parttype": null, "mountpoint": null, "pkname": null},
+      {"name": "vda", "type": "disk", "size": "21474836480", "fstype": null, "uuid": null, "parttype": null, "mountpoint": null, "pkname": null,
+         "children": [
+            {"name": "vda1", "type": "part", "size": "1073741824", "fstype": "xfs", "uuid": "b1d0fe98-eb5f-4dd2-93fe-9b720e43103a", "parttype": "0x83", "mountpoint": "/boot", "pkname": "vda"},
+            {"name": "vda2", "type": "part", "size": "20400046080", "fstype": "LVM2_member", "uuid": "gN4Dae-yOdD-eTPH-UmFO-waYv-2phL-BJe8EU", "parttype": "0x8e", "mountpoint": null, "pkname": "vda",
+               "children": [
+                  {"name": "rhel-root", "type": "lvm", "size": "18249416704", "fstype": "xfs", "uuid": "dc0cce8c-5abd-4c30-acf3-6f59757997f3", "parttype": null, "mountpoint": "/", "pkname": "vda2"},
+                  {"name": "rhel-swap", "type": "lvm", "size": "2147483648", "fstype": "swap", "uuid": "25c94d44-355d-4312-8e36-624cbf9e65c1", "parttype": null, "mountpoint": "[SWAP]", "pkname": "vda2"}
+               ]
+            }
+         ]
+      }
+   ]
+}

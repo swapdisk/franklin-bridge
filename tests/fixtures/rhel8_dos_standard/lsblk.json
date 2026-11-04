@@ -1,0 +1,15 @@
+{
+   "blockdevices": [
+      {"name":"vda","type":"disk","size":21474836480,"fstype":null,"uuid":null,"parttype":null,"mountpoint":null,"pkname":null,
+         "children": [
+            {"name":"vda1","type":"part","size":1073741824,"fstype":"xfs","uuid":"boot-uuid-1111","parttype":"0x83","mountpoint":"/boot","pkname":"vda"},
+            {"name":"vda2","type":"part","size":18253611008,"fstype":"LVM2_member","uuid":"pv-uuid-2222","parttype":"0x8e","mountpoint":null,"pkname":"vda",
+               "children": [
+                  {"name":"rhel-root","type":"lvm","size":16106127360,"fstype":"xfs","uuid":"root-uuid-3333","parttype":null,"mountpoint":"/","pkname":"vda2"},
+                  {"name":"rhel-swap","type":"lvm","size":2147483648,"fstype":"swap","uuid":"swap-uuid-4444","parttype":null,"mountpoint":"[SWAP]","pkname":"vda2"}
+               ]
+            }
+         ]
+      }
+   ]
+}

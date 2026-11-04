@@ -1,0 +1,17 @@
+{
+   "blockdevices": [
+      {"name":"vda","type":"disk","size":21474836480,"fstype":null,"uuid":null,"parttype":null,"mountpoints":[null],"pkname":null,
+         "children": [
+            {"name":"vda1","type":"part","size":1048576,"fstype":null,"uuid":null,"parttype":"21686148-6449-6E6F-744E-656564454649","mountpoints":[null],"pkname":"vda"},
+            {"name":"vda2","type":"part","size":209715200,"fstype":"vfat","uuid":"ESP1-2345","parttype":"C12A7328-F81F-11D2-BA4B-00A0C93EC93B","mountpoints":["/boot/efi"],"pkname":"vda"},
+            {"name":"vda3","type":"part","size":1073741824,"fstype":"xfs","uuid":"boot-uuid-1111","parttype":"0FC63DAF-8483-4772-8E79-3D69D8477DE4","mountpoints":["/boot"],"pkname":"vda"},
+            {"name":"vda4","type":"part","size":18041704448,"fstype":"LVM2_member","uuid":"pv-uuid-2222","parttype":"E6D6D379-F507-44C2-A23C-238F2A3DF928","mountpoints":[null],"pkname":"vda",
+               "children": [
+                  {"name":"rhel-root","type":"lvm","size":16106127360,"fstype":"xfs","uuid":"root-uuid-3333","parttype":null,"mountpoints":["/"],"pkname":"vda4"},
+                  {"name":"rhel-swap","type":"lvm","size":2147483648,"fstype":"swap","uuid":"swap-uuid-4444","parttype":null,"mountpoints":["[SWAP]"],"pkname":"vda4"}
+               ]
+            }
+         ]
+      }
+   ]
+}

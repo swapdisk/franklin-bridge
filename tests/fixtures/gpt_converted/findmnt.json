@@ -1,0 +1,10 @@
+{
+   "filesystems": [
+      {"target":"/","source":"/dev/mapper/rhel-root",
+         "children": [
+            {"target":"/boot","source":"/dev/vda3"},
+            {"target":"/boot/efi","source":"/dev/vda2"}
+         ]
+      }
+   ]
+}

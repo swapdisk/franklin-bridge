@@ -1,0 +1,7 @@
+BYT;
+/dev/vda:41943040s:virtblk:512:512:gpt:Virtio Block Device:;
+1:2048s:4095s:2048s:::bios_grub;
+2:4096s:413695s:409600s:fat32::boot, esp;
+3:413696s:2510847s:2097152s:xfs::;
+4:2510848s:37748551s:35237704s:::lvm;
+1:37748552s:41943006s:4194455s:free;
