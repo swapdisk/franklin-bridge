@@ -46,6 +46,10 @@ EFI_PACKAGES = ("grub2-efi-x64", "shim-x64", "grub2-pc")
 # Tools that must already be present for the conversion to be possible.
 ESSENTIAL_TOOLS = (
     "sgdisk",
+    "sfdisk",
+    "parted",
+    "blkid",
+    "dd",
     "mkfs.vfat",
     "partx",
     "grub2-install",

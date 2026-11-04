@@ -39,6 +39,16 @@ def test_main_healthy_returns_zero(monkeypatch, capsys):
     assert rc == 0
     assert "Preflight PASSED" in out
     assert "Conversion plan" in out
+    assert "Backup (dry-run preview)" in out
+
+
+def test_main_apply_without_confirmation_aborts(monkeypatch, capsys):
+    # Non-interactive apply (no --yes) must refuse to make changes.
+    monkeypatch.setattr(cli, "Probe", lambda: _FakeProbe("rhel8_dos_standard"))
+    rc = cli.main([])
+    out = capsys.readouterr().out
+    assert rc == 1
+    assert "Aborted" in out
 
 
 def test_main_uefi_returns_one(monkeypatch, capsys):

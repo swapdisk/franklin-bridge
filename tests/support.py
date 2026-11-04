@@ -45,6 +45,40 @@ def load_raw(scenario, is_root=True, arch="x86_64", efi_present=False,
     )
 
 
+class FakeExecutor(object):
+    """Records actions instead of performing them; for testing backup logic."""
+
+    def __init__(self, existing=()):
+        self.dry_run = False
+        self.existing = set(existing)
+        self.calls = []  # list of tuples describing each action
+
+    def log(self, msg):
+        self.calls.append(("log", msg))
+
+    def run(self, argv, mutates=True, check=True, capture_to=None):
+        self.calls.append(("run", tuple(argv), capture_to))
+        return 0
+
+    def makedirs(self, path):
+        self.calls.append(("makedirs", path))
+
+    def write_text(self, path, text):
+        self.calls.append(("write_text", path, text))
+
+    def copy(self, src, dst):
+        self.calls.append(("copy", src, dst))
+
+    def exists(self, path):
+        return path in self.existing
+
+    def islink(self, path):
+        return False
+
+    def calls_of(self, kind):
+        return [c for c in self.calls if c[0] == kind]
+
+
 def make_facts(**overrides):
     """A healthy baseline SystemFacts (RHEL 8, BIOS, DOS, free at end).
 

@@ -1,19 +1,30 @@
 """Command-line entry point for `franklin`.
 
-Phase 1 scope: gather facts, validate, compute and print the plan. Read-only;
-the mutating phases are not implemented yet.
+Flow:
+  1. Always: probe -> build facts -> plan -> validate -> print report.
+  2. If validation fails, exit non-zero.
+  3. --dry-run: additionally preview the backup actions, then stop.
+  4. Otherwise (apply mode): confirm, then run the implemented phases
+     (currently Phase 2, the safety backup). The destructive phases 3-8 are
+     not implemented yet.
 """
 import argparse
+import datetime
+import os
 import re
 import sys
 
 from . import __version__
+from .backup import execute_backup, plan_backup
+from .executor import Executor
 from .inventory import build_facts
 from .model import DEFAULT_ESP_SIZE_BYTES, EFI_PACKAGES
 from .plan import build_plan
 from .probe import Probe
 from .report import render_inventory, render_plan, render_validation
 
+
+DEFAULT_BACKUP_DIR = "/var/lib/franklin-bridge"
 
 _SIZE_RE = re.compile(r"^\s*(\d+(?:\.\d+)?)\s*([kKmMgGtT]?)(?:i?[bB])?\s*$")
 _SIZE_MULT = {
@@ -42,6 +53,19 @@ def _size_arg(text):
         raise argparse.ArgumentTypeError(str(exc))
 
 
+def confirm(prompt, assume_yes):
+    """Ask for confirmation. Non-interactive runs must pass --yes."""
+    if assume_yes:
+        return True
+    if not sys.stdin.isatty():
+        return False
+    try:
+        answer = input("%s [y/N] " % prompt)
+    except EOFError:
+        return False
+    return answer.strip().lower() in ("y", "yes")
+
+
 def build_parser():
     p = argparse.ArgumentParser(
         prog="franklin",
@@ -50,17 +74,26 @@ def build_parser():
     p.add_argument("--version", action="version",
                    version="franklin %s" % __version__)
     p.add_argument("--dry-run", action="store_true",
-                   help="only inspect and plan; make no changes "
-                        "(the only supported mode for now)")
+                   help="inspect, plan, and preview actions; make no changes")
+    p.add_argument("--yes", "-y", action="store_true",
+                   help="assume yes; required to make changes non-interactively")
     p.add_argument("--esp-size", type=_size_arg, default=DEFAULT_ESP_SIZE_BYTES,
                    metavar="SIZE",
                    help="EFI System Partition size, e.g. 200M, 512M, 1G "
                         "(default: 200M)")
     p.add_argument("--disk", metavar="DEVICE", default=None,
                    help="override the primary disk (default: auto-detect from /boot)")
+    p.add_argument("--backup-dir", metavar="DIR", default=DEFAULT_BACKUP_DIR,
+                   help="parent directory for the timestamped backup "
+                        "(default: %s)" % DEFAULT_BACKUP_DIR)
     p.add_argument("-v", "--verbose", action="store_true",
                    help="verbose output")
     return p
+
+
+def _backup_dir(parent):
+    ts = datetime.datetime.now(datetime.timezone.utc).strftime("%Y%m%dT%H%M%SZ")
+    return os.path.join(parent, "backup-%s" % ts)
 
 
 def main(argv=None):
@@ -81,15 +114,36 @@ def main(argv=None):
     if not result.ok:
         return 1
 
-    if not args.dry_run:
+    backup_dir = _backup_dir(args.backup_dir)
+
+    if args.dry_run:
         print("")
-        print("Note: applying changes is not implemented yet (phases 2-8). "
-              "Re-run with --dry-run to silence this note.")
+        print("== Backup (dry-run preview) ==")
+        execute_backup(Executor(dry_run=True), plan_backup(facts, backup_dir))
+        return 0
+
+    # Apply mode.
+    print("")
+    if not confirm("Proceed with changes, starting with a safety backup?",
+                   args.yes):
+        print("Aborted: no confirmation given "
+              "(use --yes for non-interactive runs).")
+        return 1
+
+    print("")
+    print("== Phase 2: safety backup ==")
+    summary = execute_backup(Executor(dry_run=False), plan_backup(facts, backup_dir))
+    print("")
+    print("Backup complete: %s" % summary["backup_dir"])
+    if summary["skipped"]:
+        print("  (not present, skipped: %s)" % ", ".join(summary["skipped"]))
+    print("")
+    print("Note: the conversion itself (phases 3-8) is not implemented yet; "
+          "no changes were made to the disk.")
     return 0
 
 
 def validate_facts(facts, plan):
-    # Imported here to keep the module import graph flat and obvious.
     from .validate import validate
     return validate(facts, plan)
 
