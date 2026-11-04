@@ -46,11 +46,17 @@ def load_raw(scenario, is_root=True, arch="x86_64", efi_present=False,
 
 
 class FakeExecutor(object):
-    """Records actions instead of performing them; for testing backup logic."""
+    """Records actions instead of performing them; for testing phase logic."""
 
-    def __init__(self, existing=()):
+    def __init__(self, existing=(), files=None, dir_entries=None,
+                 uuid="ABCD-1234", mounted=(), dev_fstype=""):
         self.dry_run = False
         self.existing = set(existing)
+        self.files = dict(files or {})
+        self.dir_entries = dict(dir_entries or {})
+        self.uuid = uuid
+        self.mounted = set(mounted)
+        self.dev_fstype = dev_fstype
         self.calls = []  # list of tuples describing each action
 
     def log(self, msg):
@@ -65,15 +71,35 @@ class FakeExecutor(object):
 
     def write_text(self, path, text):
         self.calls.append(("write_text", path, text))
+        self.files[path] = text
 
     def copy(self, src, dst):
         self.calls.append(("copy", src, dst))
+
+    def capture(self, argv, check=True, default=""):
+        self.calls.append(("capture", tuple(argv)))
+        if "TYPE" in argv:
+            return self.dev_fstype + "\n"
+        return self.uuid + "\n"
+
+    def append_text(self, path, text):
+        self.calls.append(("append_text", path, text))
+        self.files[path] = self.files.get(path, "") + text
+
+    def read_text(self, path):
+        return self.files.get(path, "")
 
     def exists(self, path):
         return path in self.existing
 
     def islink(self, path):
         return False
+
+    def ismount(self, path):
+        return path in self.mounted
+
+    def listdir(self, path):
+        return list(self.dir_entries.get(path, []))
 
     def calls_of(self, kind):
         return [c for c in self.calls if c[0] == kind]

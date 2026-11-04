@@ -16,6 +16,7 @@ import sys
 
 from . import __version__
 from .backup import execute_backup, plan_backup
+from .esp import execute_esp
 from .executor import Executor
 from .inventory import build_facts
 from .model import DEFAULT_ESP_SIZE_BYTES, EFI_PACKAGES
@@ -125,6 +126,9 @@ def main(argv=None):
         print("")
         print("== Partitioning (dry-run preview) ==")
         execute_partitioning(dry, facts, plan)
+        print("")
+        print("== ESP filesystem & mount (dry-run preview) ==")
+        execute_esp(dry, facts, plan)
         return 0
 
     # Apply mode.
@@ -151,7 +155,11 @@ def main(argv=None):
     execute_partitioning(executor, facts, plan)
 
     print("")
-    print("Note: phases 4-8 are not implemented yet. A reboot will be required "
+    print("== Phase 4: ESP filesystem & mount ==")
+    execute_esp(executor, facts, plan)
+
+    print("")
+    print("Note: phases 5-8 are not implemented yet. A reboot will be required "
           "once the conversion is complete.")
     return 0
 

@@ -63,6 +63,38 @@ class Executor(object):
         self.log("+ cp %s %s" % (src, dst))
         shutil.copy2(src, dst)
 
+    def capture(self, argv, check=True, default=""):
+        """Run a read-only command and return its stdout (always executes).
+
+        With check=False, a missing binary or nonzero exit returns `default`
+        instead of raising (e.g. blkid exits nonzero on a device with no fs).
+        """
+        argv = list(argv)
+        self.log("+ %s" % " ".join(argv))
+        try:
+            out = subprocess.check_output(argv, stderr=subprocess.STDOUT)
+        except (subprocess.CalledProcessError, OSError):
+            if check:
+                raise
+            return default
+        return out.decode("utf-8", "replace")
+
+    def append_text(self, path, text):
+        if self.dry_run:
+            self.log("[dry-run] would append to %s: %r" % (path, text))
+            return
+        self.log("+ append %s" % path)
+        with open(path, "a") as fh:
+            fh.write(text)
+
+    @staticmethod
+    def read_text(path):
+        try:
+            with open(path, "r") as fh:
+                return fh.read()
+        except OSError:
+            return ""
+
     @staticmethod
     def exists(path):
         return os.path.exists(path)
@@ -70,6 +102,17 @@ class Executor(object):
     @staticmethod
     def islink(path):
         return os.path.islink(path)
+
+    @staticmethod
+    def ismount(path):
+        return os.path.ismount(path)
+
+    @staticmethod
+    def listdir(path):
+        try:
+            return os.listdir(path)
+        except OSError:
+            return []
 
 
 def _default_log(msg):
