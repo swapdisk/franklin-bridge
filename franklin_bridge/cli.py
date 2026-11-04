@@ -16,6 +16,7 @@ import sys
 
 from . import __version__
 from .backup import execute_backup, plan_backup
+from .biosgrub import execute_bios_grub
 from .efistack import execute_efistack
 from .esp import execute_esp
 from .executor import Executor
@@ -133,6 +134,9 @@ def main(argv=None):
         print("")
         print("== EFI stack population (dry-run preview) ==")
         execute_efistack(dry, facts, plan)
+        print("")
+        print("== BIOS GRUB reinstall (dry-run preview) ==")
+        execute_bios_grub(dry, facts, plan)
         return 0
 
     # Apply mode.
@@ -167,7 +171,11 @@ def main(argv=None):
     execute_efistack(executor, facts, plan)
 
     print("")
-    print("Note: phases 6-8 are not implemented yet. A reboot will be required "
+    print("== Phase 6: BIOS GRUB reinstall ==")
+    execute_bios_grub(executor, facts, plan)
+
+    print("")
+    print("Note: phases 7-8 are not implemented yet. A reboot will be required "
           "once the conversion is complete.")
     return 0
 
