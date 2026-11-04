@@ -16,6 +16,7 @@ import sys
 
 from . import __version__
 from .backup import execute_backup, plan_backup
+from .efistack import execute_efistack
 from .esp import execute_esp
 from .executor import Executor
 from .inventory import build_facts
@@ -129,6 +130,9 @@ def main(argv=None):
         print("")
         print("== ESP filesystem & mount (dry-run preview) ==")
         execute_esp(dry, facts, plan)
+        print("")
+        print("== EFI stack population (dry-run preview) ==")
+        execute_efistack(dry, facts, plan)
         return 0
 
     # Apply mode.
@@ -159,7 +163,11 @@ def main(argv=None):
     execute_esp(executor, facts, plan)
 
     print("")
-    print("Note: phases 5-8 are not implemented yet. A reboot will be required "
+    print("== Phase 5: EFI stack population ==")
+    execute_efistack(executor, facts, plan)
+
+    print("")
+    print("Note: phases 6-8 are not implemented yet. A reboot will be required "
           "once the conversion is complete.")
     return 0
 

@@ -105,6 +105,12 @@ class FakeExecutor(object):
         return [c for c in self.calls if c[0] == kind]
 
 
+def _baseline_packages():
+    pkgs = dict((p, False) for p in EFI_PACKAGES)
+    pkgs["grub2-pc"] = True
+    return pkgs
+
+
 def make_facts(**overrides):
     """A healthy baseline SystemFacts (RHEL 8, BIOS, DOS, free at end).
 
@@ -135,7 +141,8 @@ def make_facts(**overrides):
         existing_biosboot=None,
         free_regions=free,
         tools=dict((t, "/usr/sbin/%s" % t) for t in ESSENTIAL_TOOLS),
-        packages=dict((p, False) for p in EFI_PACKAGES),
+        # Realistic BIOS baseline: grub2-pc is installed, the EFI packages aren't.
+        packages=_baseline_packages(),
     )
     if overrides:
         base = base._replace(**overrides)

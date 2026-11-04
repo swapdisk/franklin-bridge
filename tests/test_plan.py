@@ -22,7 +22,8 @@ def test_plan_standard_creates_everything():
     assert plan.create_esp is not None
     assert plan.create_esp.parttype_code == SGDISK_CODE_ESP
     assert plan.esp_size_bytes == DEFAULT_ESP_SIZE_BYTES
-    assert set(plan.packages_to_install) == set(EFI_PACKAGES)
+    # grub2-pc is already installed on a BIOS system; only the EFI packages remain.
+    assert set(plan.packages_to_install) == {"grub2-efi-x64", "shim-x64"}
     assert plan.needs_bios_grub_reinstall is True
     assert plan.reboot_required is True
     assert plan.unified_config_steps  # non-empty
