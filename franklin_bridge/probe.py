@@ -35,7 +35,7 @@ def _read_file(path):
 class Probe(object):
     """Collects raw system facts. Swap for a fake in tests."""
 
-    LSBLK_COLUMNS = "NAME,TYPE,SIZE,FSTYPE,UUID,PARTTYPE,MOUNTPOINT,PKNAME"
+    LSBLK_COLUMNS = "NAME,KNAME,TYPE,SIZE,FSTYPE,UUID,PARTTYPE,MOUNTPOINT,PKNAME"
 
     def collect(self, disk_override=None):
         is_root = os.geteuid() == 0

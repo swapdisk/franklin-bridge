@@ -125,6 +125,8 @@ class SystemFacts(NamedTuple):
     boot_part: Optional[Partition]
     root_part: Optional[Partition]
     same_disk_boot_and_root: bool
+    boot_disks: Tuple[str, ...]
+    root_disks: Tuple[str, ...]
     existing_esp: Optional[Partition]
     existing_biosboot: Optional[Partition]
     free_regions: Tuple[FreeRegion, ...]

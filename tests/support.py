@@ -148,6 +148,8 @@ def make_facts(**overrides):
         boot_part=boot,
         root_part=root,
         same_disk_boot_and_root=True,
+        boot_disks=("/dev/vda",),
+        root_disks=("/dev/vda",),
         existing_esp=None,
         existing_biosboot=None,
         free_regions=free,

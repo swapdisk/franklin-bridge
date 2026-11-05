@@ -80,14 +80,11 @@ def validate(facts, plan):
             "no separate /boot partition found (unsupported in this version)",
         )
 
-    # /boot and root on the same disk.
+    # /boot and root on the same single disk.
     if facts.same_disk_boot_and_root:
         r.add("single_disk", PASS, "/boot and root are on the same disk")
     else:
-        r.add(
-            "single_disk", FAIL,
-            "/boot and root are on different disks (unsupported in this version)",
-        )
+        r.add("single_disk", FAIL, _single_disk_failure_message(facts))
 
     # Essential tools.
     missing = [t for t in ESSENTIAL_TOOLS if not facts.tools.get(t)]
@@ -111,6 +108,21 @@ def validate(facts, plan):
 
     _check_free_space(facts, plan, r)
     return r
+
+
+def _single_disk_failure_message(facts):
+    boot = getattr(facts, "boot_disks", ()) or ()
+    root = getattr(facts, "root_disks", ()) or ()
+    if len(root) > 1 or len(boot) > 1:
+        spans = ", ".join(sorted(set(boot) | set(root)))
+        return ("/boot or root storage spans multiple disks (%s); "
+                "unsupported in this version" % spans)
+    if boot and root and set(boot) != set(root):
+        return ("/boot (%s) and root (%s) are on different disks; "
+                "unsupported in this version"
+                % (", ".join(boot), ", ".join(root)))
+    return ("could not confirm /boot and root share a single disk; "
+            "unsupported in this version")
 
 
 def _check_free_space(facts, plan, r):

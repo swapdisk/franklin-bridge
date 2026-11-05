@@ -124,12 +124,14 @@ def parse_lsblk(text):
                     return m
         return None
 
-    def walk(items, parent_name):
+    def walk(items, parent_kname):
         for item in items or []:
             name = item.get("name")
+            kname = item.get("kname")
             parttype = item.get("parttype")
             node = {
                 "name": name,
+                "kname": kname,
                 "path": name if (name or "").startswith("/") else "/dev/%s" % name,
                 "type": item.get("type"),
                 "size": _to_int(item.get("size")),
@@ -137,10 +139,12 @@ def parse_lsblk(text):
                 "uuid": item.get("uuid"),
                 "parttype": parttype.lower() if parttype else None,
                 "mountpoint": mount_of(item),
-                "pkname": item.get("pkname") or parent_name,
+                # pkname references the parent's KNAME (e.g. dm-2 for a thin pool),
+                # not its friendly NAME.
+                "pkname": item.get("pkname") or parent_kname,
             }
             nodes.append(node)
-            walk(item.get("children"), name)
+            walk(item.get("children"), kname)
 
     walk(doc.get("blockdevices"), None)
     return nodes
@@ -156,43 +160,90 @@ def _node_by_path(nodes, path):
     return None
 
 
-def _node_by_name(nodes, name):
-    if not name:
+def _parent_node(nodes, kname):
+    """Resolve a pkname to its node.
+
+    pkname is a kernel name (KNAME), so match on kname first. Fall back to the
+    friendly name for resilience (and for fixtures that omit kname); dm kernel
+    names like `dm-2` never collide with friendly names, so this is unambiguous.
+    """
+    if not kname:
         return None
     for node in nodes:
-        if node["name"] == name:
+        if node.get("kname") == kname:
+            return node
+    for node in nodes:
+        if node.get("name") == kname:
             return node
     return None
 
 
-def _base_disk_node(nodes, node):
-    """Walk pkname links upward until we reach a TYPE=disk node."""
+def _walk_up_to(nodes, node, node_type):
+    """Walk pkname links upward until a node of the given TYPE (or None)."""
     seen = set()
     cur = node
     while cur is not None:
-        if cur.get("type") == "disk":
+        if cur.get("type") == node_type:
             return cur
         pk = cur.get("pkname")
         if not pk or pk in seen:
             break
         seen.add(pk)
-        cur = _node_by_name(nodes, pk)
+        cur = _parent_node(nodes, pk)
     return None
+
+
+def _base_disk_node(nodes, node):
+    return _walk_up_to(nodes, node, "disk")
 
 
 def _ancestor_partition(nodes, node):
-    """Walk pkname links upward until we reach a TYPE=part node (or None)."""
+    return _walk_up_to(nodes, node, "part")
+
+
+def disk_ancestors(nodes, start_path):
+    """Return the set of disk device paths underlying a device.
+
+    Unlike the single-chain walkers, this follows the full parent graph, so a
+    device stacked on multiple disks (md RAID across disks, an LVM VG spanning
+    PVs) resolves to *all* of them. Used to detect multi-disk layouts we cannot
+    safely convert.
+    """
+    start = _node_by_path(nodes, start_path)
+    if start is None:
+        return set()
+
+    # Identify nodes by kname (what pkname references), falling back to name so
+    # this also works for fixtures/outputs that omit kname.
+    def node_id(node):
+        return node.get("kname") or node.get("name")
+
+    by_id = {}
+    parents = {}  # node id -> set of parent ids (pkname values)
+    for node in nodes:
+        nid = node_id(node)
+        if not nid:
+            continue
+        by_id.setdefault(nid, node)
+        pk = node.get("pkname")
+        if pk:
+            parents.setdefault(nid, set()).add(pk)
+
+    disks = set()
     seen = set()
-    cur = node
-    while cur is not None:
-        if cur.get("type") == "part":
-            return cur
-        pk = cur.get("pkname")
-        if not pk or pk in seen:
-            break
-        seen.add(pk)
-        cur = _node_by_name(nodes, pk)
-    return None
+    stack = [node_id(start)]
+    while stack:
+        k = stack.pop()
+        if not k or k in seen:
+            continue
+        seen.add(k)
+        node = by_id.get(k)
+        if node is not None and node.get("type") == "disk":
+            disks.add(node["path"])
+            continue  # reached a disk; stop ascending this branch
+        for pk in parents.get(k, ()):
+            stack.append(pk)
+    return disks
 
 
 # --- parted -------------------------------------------------------------------
@@ -383,14 +434,19 @@ def build_facts(raw, packages):
     boot_part = _match_partition(by_device, findmnt_map.get("/boot"), mountpoint="/boot",
                                  partitions=partitions)
 
-    # Root / same-disk detection via lsblk ancestry.
+    # Which disk(s) underlie /boot and root, following the full device graph.
+    boot_disks = tuple(sorted(disk_ancestors(lsblk_nodes, findmnt_map.get("/boot"))))
+    root_disks = tuple(sorted(disk_ancestors(lsblk_nodes, findmnt_map.get("/"))))
+    same_disk = (
+        bool(boot_disks) and bool(root_disks)
+        and set(boot_disks) == set(root_disks)
+        and len(set(boot_disks) | set(root_disks)) == 1
+    )
+
+    # The root's own partition on the primary disk (for reporting).
     root_part = None
-    same_disk = False
-    root_src = findmnt_map.get("/")
-    root_node = _node_by_path(lsblk_nodes, root_src)
+    root_node = _node_by_path(lsblk_nodes, findmnt_map.get("/"))
     if root_node is not None:
-        root_disk = _base_disk_node(lsblk_nodes, root_node)
-        same_disk = bool(root_disk and root_disk["path"] == disk.path)
         anc = _ancestor_partition(lsblk_nodes, root_node)
         if anc is not None:
             root_part = by_device.get(anc["path"])
@@ -405,6 +461,8 @@ def build_facts(raw, packages):
         boot_part=boot_part,
         root_part=root_part,
         same_disk_boot_and_root=same_disk,
+        boot_disks=boot_disks,
+        root_disks=root_disks,
         existing_esp=existing_esp,
         existing_biosboot=existing_biosboot,
         free_regions=parsed.frees,
@@ -428,6 +486,8 @@ def _degraded_facts(env, disk_path, raw, packages):
         boot_part=None,
         root_part=None,
         same_disk_boot_and_root=False,
+        boot_disks=(),
+        root_disks=(),
         existing_esp=None,
         existing_biosboot=None,
         free_regions=(),

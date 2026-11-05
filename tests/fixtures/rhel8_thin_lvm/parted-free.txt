@@ -1,0 +1,6 @@
+BYT;
+/dev/vda:65011712s:virtblk:512:512:msdos:Virtio Block Device:;
+1:2s:2047s:2046s:free;
+1:2048s:2099199s:2097152s:xfs::boot;
+2:2099200s:60293119s:58193920s:::lvm;
+1:60293120s:65011711s:4718592s:free;

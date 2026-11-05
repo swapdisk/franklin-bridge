@@ -90,6 +90,23 @@ def test_build_facts_rhel8_vm_nogrow_real_capture():
     assert other_fails == []
 
 
+def test_build_facts_thin_lvm_is_single_disk():
+    # Thin-pool root LV sits several dm layers above the disk, and its pkname is
+    # a kernel name (dm-N), not a friendly name. Ancestry must still reach vda.
+    facts = build_facts(load_raw("rhel8_thin_lvm"), EFI_PACKAGES)
+
+    assert facts.disk.path == "/dev/vda"
+    assert facts.disk.pttype == "dos"
+    assert facts.boot_part is not None and facts.boot_part.device == "/dev/vda1"
+    assert facts.root_part is not None and facts.root_part.device == "/dev/vda2"
+    assert facts.same_disk_boot_and_root is True
+
+    # The whole preflight passes for this layout (disk was grown: free at end).
+    plan = build_plan(facts)
+    result = validate(facts, plan)
+    assert result.ok, [c for c in result.checks if c.status == FAIL]
+
+
 def test_build_facts_sda_naming():
     # Reuse the standard fixtures but rename the disk device throughout.
     raw = load_raw("rhel8_dos_standard")

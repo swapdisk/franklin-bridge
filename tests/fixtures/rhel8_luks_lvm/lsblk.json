@@ -1,0 +1,19 @@
+{
+   "blockdevices": [
+      {"name": "vda", "kname": "vda", "type": "disk", "size": "21474836480", "fstype": null, "uuid": null, "parttype": null, "mountpoint": null, "pkname": null,
+         "children": [
+            {"name": "vda1", "kname": "vda1", "type": "part", "size": "1073741824", "fstype": "xfs", "uuid": "boot-uuid-luks-1", "parttype": "0x83", "mountpoint": "/boot", "pkname": "vda"},
+            {"name": "vda2", "kname": "vda2", "type": "part", "size": "19325835776", "fstype": "crypto_LUKS", "uuid": "luks-part-uuid", "parttype": "0x83", "mountpoint": null, "pkname": "vda",
+               "children": [
+                  {"name": "luks-9c7e2b1a-aaaa-bbbb-cccc-0123456789ab", "kname": "dm-0", "type": "crypt", "size": "19323738624", "fstype": "LVM2_member", "uuid": "pv-on-luks-uuid", "parttype": null, "mountpoint": null, "pkname": "vda2",
+                     "children": [
+                        {"name": "rhel-root", "kname": "dm-1", "type": "lvm", "size": "17179869184", "fstype": "xfs", "uuid": "root-uuid-luks", "parttype": null, "mountpoint": "/", "pkname": "dm-0"},
+                        {"name": "rhel-swap", "kname": "dm-2", "type": "lvm", "size": "2143289344", "fstype": "swap", "uuid": "swap-uuid-luks", "parttype": null, "mountpoint": "[SWAP]", "pkname": "dm-0"}
+                     ]
+                  }
+               ]
+            }
+         ]
+      }
+   ]
+}

@@ -1,0 +1,10 @@
+{
+   "filesystems": [
+      {"target": "/", "source": "/dev/mapper/rhel_thin800-root",
+         "children": [
+            {"target": "/boot", "source": "/dev/vda1"},
+            {"target": "/var", "source": "/dev/mapper/rhel_thin800-var"}
+         ]
+      }
+   ]
+}

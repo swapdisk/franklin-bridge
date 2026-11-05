@@ -1,0 +1,39 @@
+{
+   "blockdevices": [
+      {"name": "sr0", "kname": "sr0", "type": "rom", "size": "14234419200", "fstype": "iso9660", "uuid": "2024-05-16-03-31-17-00", "parttype": null, "mountpoint": null, "pkname": null},
+      {"name": "vda", "kname": "vda", "type": "disk", "size": "33285996544", "fstype": null, "uuid": null, "parttype": null, "mountpoint": null, "pkname": null,
+         "children": [
+            {"name": "vda1", "kname": "vda1", "type": "part", "size": "1073741824", "fstype": "xfs", "uuid": "17aa7f7b-0cf6-453c-b77e-3a75510d8562", "parttype": "0x83", "mountpoint": "/boot", "pkname": "vda"},
+            {"name": "vda2", "kname": "vda2", "type": "part", "size": "29795287040", "fstype": "LVM2_member", "uuid": "n4BN5C-c8WG-c7LR-Im2Q-9rtl-0VWh-6o9cQI", "parttype": "0x8e", "mountpoint": null, "pkname": "vda",
+               "children": [
+                  {"name": "rhel_thin800-pool00_tmeta", "kname": "dm-0", "type": "lvm", "size": "25165824", "fstype": null, "uuid": null, "parttype": null, "mountpoint": null, "pkname": "vda2",
+                     "children": [
+                        {"name": "rhel_thin800-pool00-tpool", "kname": "dm-2", "type": "lvm", "size": "21638414336", "fstype": null, "uuid": null, "parttype": null, "mountpoint": null, "pkname": "dm-0",
+                           "children": [
+                              {"name": "rhel_thin800-root", "kname": "dm-3", "type": "lvm", "size": "14449377280", "fstype": "ext4", "uuid": "1b4cf6e1-df80-4fce-8798-cbc56a970d17", "parttype": null, "mountpoint": "/", "pkname": "dm-2"},
+                              {"name": "rhel_thin800-pool00", "kname": "dm-5", "type": "lvm", "size": "21638414336", "fstype": null, "uuid": null, "parttype": null, "mountpoint": null, "pkname": "dm-2"},
+                              {"name": "rhel_thin800-mythin", "kname": "dm-6", "type": "lvm", "size": "8589934592", "fstype": "ext4", "uuid": "484bf746-f2dd-432e-80be-a7b048a79782", "parttype": null, "mountpoint": null, "pkname": "dm-2"},
+                              {"name": "rhel_thin800-var", "kname": "dm-7", "type": "lvm", "size": "7189037056", "fstype": "ext4", "uuid": "c8ce950a-d1ad-4364-a5c3-8e4308cf1fa2", "parttype": null, "mountpoint": "/var", "pkname": "dm-2"}
+                           ]
+                        }
+                     ]
+                  },
+                  {"name": "rhel_thin800-pool00_tdata", "kname": "dm-1", "type": "lvm", "size": "21638414336", "fstype": null, "uuid": null, "parttype": null, "mountpoint": null, "pkname": "vda2",
+                     "children": [
+                        {"name": "rhel_thin800-pool00-tpool", "kname": "dm-2", "type": "lvm", "size": "21638414336", "fstype": null, "uuid": null, "parttype": null, "mountpoint": null, "pkname": "dm-1",
+                           "children": [
+                              {"name": "rhel_thin800-root", "kname": "dm-3", "type": "lvm", "size": "14449377280", "fstype": "ext4", "uuid": "1b4cf6e1-df80-4fce-8798-cbc56a970d17", "parttype": null, "mountpoint": "/", "pkname": "dm-2"},
+                              {"name": "rhel_thin800-pool00", "kname": "dm-5", "type": "lvm", "size": "21638414336", "fstype": null, "uuid": null, "parttype": null, "mountpoint": null, "pkname": "dm-2"},
+                              {"name": "rhel_thin800-mythin", "kname": "dm-6", "type": "lvm", "size": "8589934592", "fstype": "ext4", "uuid": "484bf746-f2dd-432e-80be-a7b048a79782", "parttype": null, "mountpoint": null, "pkname": "dm-2"},
+                              {"name": "rhel_thin800-var", "kname": "dm-7", "type": "lvm", "size": "7189037056", "fstype": "ext4", "uuid": "c8ce950a-d1ad-4364-a5c3-8e4308cf1fa2", "parttype": null, "mountpoint": "/var", "pkname": "dm-2"}
+                           ]
+                        }
+                     ]
+                  },
+                  {"name": "rhel_thin800-swap", "kname": "dm-4", "type": "lvm", "size": "2143289344", "fstype": "swap", "uuid": "2b72167e-76e6-42e5-b226-fb11c131d818", "parttype": null, "mountpoint": "[SWAP]", "pkname": "vda2"}
+               ]
+            }
+         ]
+      }
+   ]
+}

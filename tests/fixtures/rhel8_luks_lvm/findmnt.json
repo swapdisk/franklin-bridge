@@ -1,0 +1,9 @@
+{
+   "filesystems": [
+      {"target": "/", "source": "/dev/mapper/rhel-root",
+         "children": [
+            {"target": "/boot", "source": "/dev/vda1"}
+         ]
+      }
+   ]
+}
