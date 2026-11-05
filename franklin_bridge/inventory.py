@@ -285,15 +285,19 @@ def parse_parted(text):
             "unrecognized parted output: %s"
             % (snippet[0] if snippet else "(empty)")
         )
+    # Anchor on the BYT; marker and ignore anything before it (e.g. a parted
+    # "Warning:" line on stderr that leaked into stdout). The disk line is the
+    # first line after BYT;, followed by the partition/free rows.
+    body = lines[lines.index("BYT;") + 1:]
     disk_line = None
     rows = []
-    for line in lines:
-        if line == "BYT;":
-            continue
+    for line in body:
         if disk_line is None:
             disk_line = line
             continue
         rows.append(line)
+    if disk_line is None:
+        raise ParseError("parted output has no disk line after BYT;")
 
     d = disk_line.rstrip(";").split(":")
     if len(d) < 6:

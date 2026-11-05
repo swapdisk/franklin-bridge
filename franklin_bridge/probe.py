@@ -13,8 +13,12 @@ from .model import ESSENTIAL_TOOLS, EFI_PACKAGES
 
 
 def _run(cmd, allow_fail=False):
+    # Capture stdout only; discard stderr. Tools like parted print warnings to
+    # stderr (e.g. "Not all of the space ... appears to be used" after a disk
+    # grow), and merging those into stdout would corrupt the machine-readable
+    # output we parse.
     try:
-        out = subprocess.check_output(cmd, stderr=subprocess.STDOUT)
+        out = subprocess.check_output(cmd, stderr=subprocess.DEVNULL)
     except (OSError, subprocess.CalledProcessError) as exc:
         if allow_fail and isinstance(exc, subprocess.CalledProcessError):
             return exc.output.decode("utf-8", "replace") if exc.output else ""

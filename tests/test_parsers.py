@@ -71,6 +71,34 @@ def test_parse_parted_gpt_flags():
     assert by_num[2].flags == ("boot", "esp")
 
 
+def test_parse_parted_ignores_leading_warning():
+    # parted prints a "Warning:" to stderr after a disk grow (GPT backup no longer
+    # at the end). Even if that leaks into stdout, parsing must anchor on BYT;.
+    text = (
+        "Warning: Not all of the space available to /dev/vda appears to be used, "
+        "you can fix the GPT to use all of the space (an extra 1673216 blocks) or "
+        "continue with the current setting? \n"
+        "BYT;\n"
+        "/dev/vda:35651584s:virtblk:512:512:gpt:Virtio Block Device:;\n"
+        "1:34s:2047s:2014s:free;\n"
+        "1:2048s:4095s:2048s:::bios_grub;\n"
+        "2:4096s:413695s:409600s:fat16::boot, esp;\n"
+        "3:413696s:2510847s:2097152s:xfs::bls_boot;\n"
+        "4:2510848s:33978334s:31467487s:::lvm;\n"
+        "1:33978335s:35651550s:1673216s:free;\n"
+    )
+    disk = parse_parted(text)
+    assert disk.path == "/dev/vda"
+    assert disk.pttype == "gpt"
+    assert disk.size_sectors == 35651584
+    assert len(disk.parts) == 4
+    by_num = {p.number: p for p in disk.parts}
+    assert by_num[1].flags == ("bios_grub",)
+    assert by_num[2].flags == ("boot", "esp")
+    assert len(disk.frees) == 2
+    assert disk.frees[-1].start_sector == 33978335
+
+
 def test_parse_rpm_q_mixed():
     pkgs = parse_rpm_q(read_fixture("rhel8_dos_standard", "rpm-q.txt"), EFI_PACKAGES)
     assert pkgs["grub2-efi-x64"] is False
