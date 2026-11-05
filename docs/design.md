@@ -1,13 +1,16 @@
 # Franklin Bridge — Design
 
-> Status: **draft for discussion** · Last updated: 2026-11-04
+> Status: **draft for discussion** · Last updated: 2026-11-05
 
 ## 1. Purpose
 
 Convert a **running RHEL system currently booting in Legacy BIOS mode** (DOS/MBR
-partition table, no EFI System Partition) into a **hybrid-boot** configuration —
-one that boots correctly whether the firmware is later set to **Legacy BIOS or
-UEFI**, following the unified GRUB2 layout from §3 of Red Hat KB 6718341.
+partition table, no EFI System Partition) into a **hybrid-boot** configuration,
+that is, one that boots correctly whether the firmware is later set to **Legacy
+BIOS** or **UEFI**, following the unified GRUB2 layout recommended in §3 of the
+Red Hat knowledge article [How to configure Grub2 to be able to boot
+alternatively on UEFI or BIOS mode](https://access.redhat.com/articles/6718341)
+(KB 6718341).
 
 The firmware switch itself is **out of scope** by design: the hybrid layout
 decouples the OS-side automation from the firmware-mode change, which an
@@ -23,7 +26,8 @@ KB 6718341 §3.3 ("Fix on BIOS mode systems") assumes two prerequisites are
 
 Franklin Bridge's main value-add is **automating those skipped prerequisites**
 (DOS→GPT conversion, BIOS Boot partition, ESP creation/format/mount, shim +
-`grub2-efi` population), and *then* performing the §3.3 unified-config steps.
+`grub2-efi` population), and *then* performing the KB 6718341 §3.3
+unified-config steps.
 
 ## 2. Settled decisions
 
@@ -39,9 +43,10 @@ Franklin Bridge's main value-add is **automating those skipped prerequisites**
 ### Version nuance
 
 RHEL **9 and 10** already ship the unified GRUB2 config by default, so there the
-tool's real work is the **partition prerequisites** plus **verify/repair** of the
-config. RHEL **8** needs the full §3.3 config steps. This is handled by
-**runtime detection of the current state**, not hardcoded per-version branches.
+tool's real work is the **partition prerequisites** plus **verify/repair** of
+the config. RHEL **8** needs the full KB 6718341 §3.3 config steps. This is
+handled by **runtime detection of the current state**, not hardcoded per-version
+branches.
 
 ## 3. Scope
 
@@ -95,7 +100,7 @@ GPT disk:
 /etc/grub2.cfg, /etc/grub2-efi.cfg -> ../boot/grub2/grub.cfg
 ```
 
-Bootstrap `/boot/efi/EFI/redhat/grub.cfg` (generated, per KB §3.1 item 4):
+Bootstrap `/boot/efi/EFI/redhat/grub.cfg` (generated, per KB 6718341 §3.1 item 4):
 
 ```
 connectefi scsi
@@ -111,29 +116,30 @@ Each phase is independently testable and ordered so a failure leaves a
 recoverable state. Phases run top-to-bottom; each is idempotent and re-checks
 whether its end-state already holds.
 
-1. **Preflight & inventory** — detect boot mode, primary disk, partition table
-   type, filesystem/LVM layout, free space, and required tools. Compute the
-   partition plan (sizes, order, free-space placement). Refuse to proceed on any
-   unmet precondition with an actionable message.
-2. **Backup & safety net** — save the partition table (`sgdisk --backup`),
-   `/etc/fstab`, and existing GRUB configs to a timestamped backup dir; record a
-   rollback note.
-3. **Partition surgery** — `sgdisk -g` (DOS→GPT); create `ef02` (BIOS Boot) and
-   `ef00` (ESP) in free space; register new partitions with the kernel
-   (`partx -a <disk>`), noting that full table re-read is deferred to reboot.
-4. **ESP filesystem & mount** — `mkfs.vfat -F32` on the ESP; create `/boot/efi`;
-   add an fstab entry by UUID; mount it.
-5. **EFI stack population** — install `shim-x64` + `grub2-efi-x64` (ensure
-   `grub2-pc` present); verify `/boot/efi/EFI/redhat` is populated; set up the
-   `\EFI\BOOT` fallback (`BOOTX64.EFI`, `fbx64.efi`).
-6. **BIOS GRUB reinstall** — `grub2-install --target i386-pc <disk>` (now
-   succeeds because the BIOS Boot partition exists).
-7. **Unified GRUB2 config** — write the bootstrap `grub.cfg` on the ESP; ensure
-   `grubenv` is a real file in `/boot/grub2`; fix `/etc/grub2*.cfg` symlinks;
-   `grub2-mkconfig -o /boot/grub2/grub.cfg`.
-8. **Validate & report** — verify layout, configs, and bootability signals;
-   print a summary, the **reboot-required** notice, and how to later flip the
-   firmware to UEFI.
+1. [**Preflight & inventory**](phase1.md) — detect boot mode, primary disk,
+   partition table type, filesystem/LVM layout, free space, and required tools.
+   Compute the partition plan (sizes, order, free-space placement). Refuse to
+   proceed on any unmet precondition with an actionable message.
+2. [**Backup & safety net**](phase2.md) — save the partition table
+   (`sgdisk --backup`), `/etc/fstab`, and existing GRUB configs to a timestamped
+   backup dir; record a rollback note.
+3. [**Partition surgery**](phase3.md) — `sgdisk -g` (DOS→GPT); create `ef02`
+   (BIOS Boot) and `ef00` (ESP) in free space; register new partitions with the
+   kernel (`partx -a <disk>`), noting that full table re-read is deferred to
+   reboot.
+4. [**ESP filesystem & mount**](phase4.md) — `mkfs.vfat -F32` on the ESP; create
+   `/boot/efi`; add an fstab entry by UUID; mount it.
+5. [**EFI stack population**](phase5.md) — install `shim-x64` + `grub2-efi-x64`
+   (ensure `grub2-pc` present); verify `/boot/efi/EFI/redhat` is populated; set up
+   the `\EFI\BOOT` fallback (`BOOTX64.EFI`, `fbx64.efi`).
+6. [**BIOS GRUB reinstall**](phase6.md) — `grub2-install --target i386-pc <disk>`
+   (now succeeds because the BIOS Boot partition exists).
+7. [**Unified GRUB2 config**](phase7.md) — write the bootstrap `grub.cfg` on the
+   ESP; ensure `grubenv` is a real file in `/boot/grub2`; fix `/etc/grub2*.cfg`
+   symlinks; `grub2-mkconfig -o /boot/grub2/grub.cfg`.
+8. [**Validate & report**](phase8.md) — verify layout, configs, and bootability
+   signals; print a summary, the **reboot-required** notice, and how to later
+   flip the firmware to UEFI.
 
 ## 7. Architecture (code structure)
 
