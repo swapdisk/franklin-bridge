@@ -83,7 +83,7 @@ def test_boot_and_root_different_disks_fails():
 
 def test_missing_tool_fails():
     tools = dict((t, "/usr/sbin/%s" % t) for t in ESSENTIAL_TOOLS)
-    tools["sgdisk"] = None
+    tools["sfdisk"] = None
     result = _run(make_facts(tools=tools))
     assert _status(result, "tools") == FAIL
 

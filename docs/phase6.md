@@ -13,7 +13,7 @@ verifies the i386-pc modules are present under `/boot/grub2/i386-pc/`.
 
 ## Why it matters
 
-Phase 3's `sgdisk -g` wrote the GPT headers into sectors 1–33, overwriting the
+Phase 3's GPT conversion wrote the GPT headers into the start of the disk, overwriting the
 post-MBR gap where the original BIOS `core.img` lived — leaving the system
 **not reboot-safe**. Phase 6 reinstalls that core image, now into the dedicated
 BIOS Boot partition (which is where GRUB puts it on GPT disks). After this phase

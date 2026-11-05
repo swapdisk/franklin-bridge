@@ -40,6 +40,23 @@ class Executor(object):
             return 0
         return subprocess.call(argv)
 
+    def run_input(self, argv, input_text, mutates=True, check=True):
+        """Run a command, feeding input_text to its stdin (e.g. an sfdisk script)."""
+        argv = list(argv)
+        desc = " ".join(argv)
+        if self.dry_run and mutates:
+            self.log("[dry-run] would run: %s  (with %d-byte script on stdin)"
+                     % (desc, len(input_text)))
+            return 0
+        self.log("+ %s  (<<script)" % desc)
+        proc = subprocess.run(
+            argv, input=input_text.encode("utf-8"),
+            stdout=subprocess.PIPE, stderr=subprocess.DEVNULL,
+        )
+        if check and proc.returncode != 0:
+            raise subprocess.CalledProcessError(proc.returncode, argv)
+        return proc.returncode
+
     def makedirs(self, path):
         if self.dry_run:
             self.log("[dry-run] would create directory: %s" % path)

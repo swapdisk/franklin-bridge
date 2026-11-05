@@ -3,8 +3,8 @@ from .model import (
     BIOS_BOOT_SIZE_BYTES,
     DEFAULT_ESP_SIZE_BYTES,
     EFI_PACKAGES,
-    SGDISK_CODE_BIOS_BOOT,
-    SGDISK_CODE_ESP,
+    GUID_BIOS_BOOT,
+    GUID_ESP,
     UNIFIED_STEPS,
     ConversionPlan,
     PartSpec,
@@ -27,14 +27,14 @@ def build_plan(facts, esp_size_bytes=DEFAULT_ESP_SIZE_BYTES):
         plan.create_biosboot = PartSpec(
             name="BIOS boot partition",
             size_bytes=BIOS_BOOT_SIZE_BYTES,
-            parttype_code=SGDISK_CODE_BIOS_BOOT,
+            parttype_guid=GUID_BIOS_BOOT,
         )
 
     if facts.existing_esp is None:
         plan.create_esp = PartSpec(
             name="EFI System Partition",
             size_bytes=esp_size_bytes,
-            parttype_code=SGDISK_CODE_ESP,
+            parttype_guid=GUID_ESP,
         )
 
     plan.packages_to_install = [

@@ -50,7 +50,7 @@ branches.
 
 **In scope**
 
-- DOS → GPT conversion in place (`sgdisk`)
+- DOS → GPT conversion in place (`sfdisk`; no `gdisk`/`sgdisk` dependency)
 - Create 1 MB **BIOS Boot** partition (`ef02`) + **EFI System Partition**
   (`ef00`, FAT32, `/boot/efi`), **default 200 MB**, overridable via a
   command-line option (e.g. `--esp-size`)
@@ -79,8 +79,8 @@ branches.
   the disk for the secondary GPT header/table. (Operator grew the disk first.)
 - Standard RHEL layout: a separate `/boot` partition; root on LVM. We do **not**
   move or resize existing partitions.
-- Required tools available: `gdisk`/`sgdisk`, `dosfstools` (`mkfs.vfat`),
-  `grub2-*`, and reachable dnf repositories for package installs.
+- Required tools available: `sfdisk`/`parted` (util-linux), `dosfstools`
+  (`mkfs.vfat`), `grub2-*`, and reachable dnf repositories for package installs.
 
 ## 5. Target end-state (x86_64)
 
@@ -119,12 +119,12 @@ whether its end-state already holds.
    Compute the partition plan (sizes, order, free-space placement). Refuse to
    proceed on any unmet precondition with an actionable message.
 2. [**Backup & safety net**](phase2.md): save the partition table
-   (`sgdisk --backup`), `/etc/fstab`, and existing GRUB configs to a timestamped
+   (`sfdisk --dump`), `/etc/fstab`, and existing GRUB configs to a timestamped
    backup dir; record a rollback note.
-3. [**Partition surgery**](phase3.md): `sgdisk -g` (DOS→GPT); create `ef02`
-   (BIOS Boot) and `ef00` (ESP) in free space; register new partitions with the
-   kernel (`partx -a <disk>`), noting that full table re-read is deferred to
-   reboot.
+3. [**Partition surgery**](phase3.md): convert DOS→GPT with `sfdisk` (preserving
+   existing partitions); create the BIOS Boot and EFI System partitions in free
+   space; register new partitions with the kernel (`partx -a`), noting that full
+   table re-read is deferred to reboot.
 4. [**ESP filesystem & mount**](phase4.md): `mkfs.vfat -F32` on the ESP; create
    `/boot/efi`; add an fstab entry by UUID; mount it.
 5. [**EFI stack population**](phase5.md): install `shim-x64` + `grub2-efi-x64`
@@ -141,7 +141,7 @@ whether its end-state already holds.
 
 ## 7. Architecture (code structure)
 
-- **Pure logic, unit-tested:** parsing `lsblk`/`sgdisk`/`findmnt` output,
+- **Pure logic, unit-tested:** parsing `lsblk`/`sfdisk`/`parted`/`findmnt` output,
   computing the partition plan, rendering config files (bootstrap `grub.cfg`,
   fstab line). No side effects.
 - **Execution layer:** a thin wrapper around `subprocess` for all

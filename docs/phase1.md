@@ -9,8 +9,10 @@
 1. **Free-space detection** via `parted -m -s <disk> unit s print free` (explicit
    free regions), cross-checked against disk size.
 2. **Unsupported layouts fail fast** in v1 with a clear message: no separate
-   `/boot` partition, or `/boot` and root on different disks.
-3. **Phase 1 is strictly read-only.** Missing base tools (`gdisk`/`sgdisk`,
+   `/boot` partition; `/boot` or root spanning multiple disks; DOS
+   extended/logical partitions; or any MBR partition type outside the known-safe
+   set (Linux `83`, LVM `8e`, swap `82`).
+3. **Phase 1 is strictly read-only.** Missing base tools (`sfdisk`,
    `dosfstools`) are *reported*; installs happen in later phases.
 4. **Single command: `franklin`** with flags `--dry-run`, `--esp-size`,
    `--disk`, `-v`. (Until the mutating phases exist, every run is effectively a
@@ -69,8 +71,9 @@ tests/
 ## Validation checks
 
 Hard fail: not root · arch ≠ x86_64 · OS not RHEL 8/9/10 · firmware already UEFI
-· disk not DOS (GPT ⇒ warn, may be resuming) · no separate `/boot` · `/boot` and
-root on different disks · insufficient free space · no free space **at the end of
-the disk** (GPT needs the secondary header there) · essential tool missing.
+· disk not DOS (GPT ⇒ warn, may be resuming) · no separate `/boot` · `/boot` or
+root spanning multiple disks · DOS extended/logical partitions present ·
+unsupported MBR partition type · insufficient free space · no free space **at the
+end of the disk** (GPT needs the secondary header there) · essential tool missing.
 
 Warn: EFI packages not yet installed (installed in Phase 5).

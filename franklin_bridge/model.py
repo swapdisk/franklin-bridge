@@ -32,10 +32,19 @@ GUID_ESP = "c12a7328-f81f-11d2-ba4b-00a0c93ec93b"
 GUID_BIOS_BOOT = "21686148-6449-6e6f-744e-656564454649"
 
 
-# --- sgdisk type codes used when creating partitions --------------------------
+# --- MBR partition types we understand when converting DOS -> GPT --------------
 
-SGDISK_CODE_ESP = "ef00"
-SGDISK_CODE_BIOS_BOOT = "ef02"
+# MBR type byte -> GPT partition type GUID, for the existing partitions we
+# preserve during conversion. Any MBR type NOT in this map is refused in
+# preflight rather than guessed at.
+MBR_TO_GPT_GUID = {
+    0x83: "0fc63daf-8483-4772-8e79-3d69d8477de4",  # Linux filesystem
+    0x8e: "e6d6d379-f507-44c2-a23c-238f2a3df928",  # Linux LVM
+    0x82: "0657fd6d-a4ab-43c4-84e5-0933c84b4f4f",  # Linux swap
+}
+SUPPORTED_MBR_TYPES = frozenset(MBR_TO_GPT_GUID)      # {0x83, 0x8e, 0x82}
+# Extended-partition container types (imply logical partitions); unsupported.
+MBR_EXTENDED_TYPES = frozenset((0x05, 0x0f, 0x85))
 
 
 # --- Package / tool expectations ----------------------------------------------
@@ -44,8 +53,9 @@ SGDISK_CODE_BIOS_BOOT = "ef02"
 EFI_PACKAGES = ("grub2-efi-x64", "shim-x64", "grub2-pc")
 
 # Tools that must already be present for the conversion to be possible.
+# Partitioning uses sfdisk (util-linux); gdisk/sgdisk is intentionally NOT
+# required (it is not shipped on RHEL 10).
 ESSENTIAL_TOOLS = (
-    "sgdisk",
     "sfdisk",
     "parted",
     "blkid",
@@ -132,12 +142,15 @@ class SystemFacts(NamedTuple):
     free_regions: Tuple[FreeRegion, ...]
     tools: Dict[str, Optional[str]]
     packages: Dict[str, bool]
+    # DOS-only safety signals (empty/False on GPT disks):
+    dos_extended_present: bool
+    dos_unsupported_types: Tuple[str, ...]
 
 
 class PartSpec(NamedTuple):
     name: str
     size_bytes: int
-    parttype_code: str  # sgdisk type code
+    parttype_guid: str  # GPT partition type GUID
 
 
 class Check(NamedTuple):

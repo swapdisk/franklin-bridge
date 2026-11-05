@@ -50,7 +50,7 @@ class FakeExecutor(object):
 
     def __init__(self, existing=(), files=None, dir_entries=None,
                  uuid="ABCD-1234", mounted=(), dev_fstype="",
-                 links=None, grub_dir="/grub2", boot_uuid=None):
+                 links=None, grub_dir="/grub2", boot_uuid=None, dump_text=""):
         self.dry_run = False
         self.existing = set(existing)
         self.files = dict(files or {})
@@ -61,6 +61,7 @@ class FakeExecutor(object):
         self.links = dict(links or {})  # path -> symlink target
         self.grub_dir = grub_dir
         self.boot_uuid = boot_uuid if boot_uuid is not None else uuid
+        self.dump_text = dump_text  # returned for `sfdisk -d`
         self.calls = []  # list of tuples describing each action
 
     def log(self, msg):
@@ -68,6 +69,10 @@ class FakeExecutor(object):
 
     def run(self, argv, mutates=True, check=True, capture_to=None):
         self.calls.append(("run", tuple(argv), capture_to))
+        return 0
+
+    def run_input(self, argv, input_text, mutates=True, check=True):
+        self.calls.append(("run_input", tuple(argv), input_text))
         return 0
 
     def makedirs(self, path):
@@ -82,6 +87,8 @@ class FakeExecutor(object):
 
     def capture(self, argv, check=True, default=""):
         self.calls.append(("capture", tuple(argv)))
+        if "sfdisk" in argv and "-d" in argv:
+            return self.dump_text
         if "TYPE" in argv:
             return self.dev_fstype + "\n"
         if "grub2-mkrelpath" in argv:
@@ -156,6 +163,8 @@ def make_facts(**overrides):
         tools=dict((t, "/usr/sbin/%s" % t) for t in ESSENTIAL_TOOLS),
         # Realistic BIOS baseline: grub2-pc is installed, the EFI packages aren't.
         packages=_baseline_packages(),
+        dos_extended_present=False,
+        dos_unsupported_types=(),
     )
     if overrides:
         base = base._replace(**overrides)

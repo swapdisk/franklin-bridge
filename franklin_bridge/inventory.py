@@ -11,6 +11,8 @@ from typing import Dict, List, NamedTuple, Optional, Tuple
 from .model import (
     GUID_BIOS_BOOT,
     GUID_ESP,
+    MBR_EXTENDED_TYPES,
+    SUPPORTED_MBR_TYPES,
     DiskFacts,
     EnvFacts,
     FreeRegion,
@@ -201,6 +203,43 @@ def _ancestor_partition(nodes, node):
     return _walk_up_to(nodes, node, "part")
 
 
+def _mbr_type_int(parttype):
+    """Parse an lsblk MBR PARTTYPE like '0x83' to an int, or None."""
+    if not parttype:
+        return None
+    try:
+        return int(parttype, 16)
+    except (TypeError, ValueError):
+        return None
+
+
+def dos_type_signals(nodes, disk_path):
+    """Inspect a DOS disk's partition types for things we won't convert.
+
+    Returns (extended_present, unsupported_types). `extended_present` is True if
+    any partition is an extended container (implying logical partitions).
+    `unsupported_types` lists any MBR type strings that are neither extended nor
+    in the known-safe allowlist. Both empty/False for a non-DOS or unreadable
+    disk.
+    """
+    extended = False
+    unsupported = []
+    for node in nodes:
+        if node.get("type") != "part":
+            continue
+        base = _base_disk_node(nodes, node)
+        if base is None or base.get("path") != disk_path:
+            continue
+        type_int = _mbr_type_int(node.get("parttype"))
+        if type_int is None:
+            continue
+        if type_int in MBR_EXTENDED_TYPES:
+            extended = True
+        elif type_int not in SUPPORTED_MBR_TYPES:
+            unsupported.append(node.get("parttype"))
+    return extended, tuple(sorted(set(unsupported)))
+
+
 def disk_ancestors(nodes, start_path):
     """Return the set of disk device paths underlying a device.
 
@@ -328,6 +367,32 @@ def parse_parted(text):
         path, size_sectors, sector_size, _normalize_pttype(pttype),
         tuple(parts), tuple(frees),
     )
+
+
+def _sfdisk_dump_partitions(dump_text):
+    """Parse `sfdisk -d <disk>` output into [{start, size, type}] (pure).
+
+    Each partition line looks like:
+        /dev/vda1 : start=        2048, size=     2097152, type=83, bootable
+    """
+    parts = []
+    for line in dump_text.splitlines():
+        line = line.strip()
+        if " : " not in line:
+            continue
+        _, _, attrs = line.partition(" : ")
+        fields = {}
+        for item in attrs.split(","):
+            if "=" in item:
+                key, _, value = item.partition("=")
+                fields[key.strip()] = value.strip()
+        if "start" in fields and "size" in fields:
+            parts.append({
+                "start": _to_int(fields["start"]),
+                "size": _to_int(fields["size"]),
+                "type": fields.get("type", ""),
+            })
+    return parts
 
 
 def _normalize_pttype(pttype):
@@ -458,6 +523,11 @@ def build_facts(raw, packages):
     existing_esp = _find_esp(partitions)
     existing_biosboot = _find_biosboot(partitions)
 
+    if disk.pttype == "dos":
+        dos_extended, dos_unsupported = dos_type_signals(lsblk_nodes, disk.path)
+    else:
+        dos_extended, dos_unsupported = False, ()
+
     return SystemFacts(
         env=env,
         disk=disk,
@@ -472,6 +542,8 @@ def build_facts(raw, packages):
         free_regions=parsed.frees,
         tools=dict(raw.which),
         packages=parse_rpm_q(raw.rpm_q, packages),
+        dos_extended_present=dos_extended,
+        dos_unsupported_types=dos_unsupported,
     )
 
 
@@ -497,6 +569,8 @@ def _degraded_facts(env, disk_path, raw, packages):
         free_regions=(),
         tools=dict(raw.which),
         packages=parse_rpm_q(raw.rpm_q, packages),
+        dos_extended_present=False,
+        dos_unsupported_types=(),
     )
 
 

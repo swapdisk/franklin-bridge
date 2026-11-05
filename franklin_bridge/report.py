@@ -58,16 +58,15 @@ def render_plan(plan):
     lines.append("  Convert DOS -> GPT: %s" % ("yes" if plan.convert_to_gpt else "no"))
     if plan.create_biosboot:
         lines.append(
-            "  Create BIOS Boot partition: %s (%s)"
-            % (_mib(plan.create_biosboot.size_bytes), plan.create_biosboot.parttype_code)
+            "  Create BIOS Boot partition: %s"
+            % _mib(plan.create_biosboot.size_bytes)
         )
     else:
         lines.append("  Create BIOS Boot partition: skip (already present)")
     if plan.create_esp:
         lines.append(
-            "  Create EFI System Partition: %s (%s), mount %s"
-            % (_mib(plan.create_esp.size_bytes), plan.create_esp.parttype_code,
-               plan.esp_mountpoint)
+            "  Create EFI System Partition: %s, mount %s"
+            % (_mib(plan.create_esp.size_bytes), plan.esp_mountpoint)
         )
     else:
         lines.append("  Create EFI System Partition: skip (already present)")

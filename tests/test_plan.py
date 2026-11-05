@@ -5,8 +5,8 @@ from franklin_bridge.model import (
     DEFAULT_ESP_SIZE_BYTES,
     EFI_PACKAGES,
     MIB,
-    SGDISK_CODE_BIOS_BOOT,
-    SGDISK_CODE_ESP,
+    GUID_BIOS_BOOT,
+    GUID_ESP,
 )
 from franklin_bridge.plan import build_plan
 
@@ -18,9 +18,9 @@ def test_plan_standard_creates_everything():
     assert plan.convert_to_gpt is True
     assert plan.create_biosboot is not None
     assert plan.create_biosboot.size_bytes == BIOS_BOOT_SIZE_BYTES
-    assert plan.create_biosboot.parttype_code == SGDISK_CODE_BIOS_BOOT
+    assert plan.create_biosboot.parttype_guid == GUID_BIOS_BOOT
     assert plan.create_esp is not None
-    assert plan.create_esp.parttype_code == SGDISK_CODE_ESP
+    assert plan.create_esp.parttype_guid == GUID_ESP
     assert plan.esp_size_bytes == DEFAULT_ESP_SIZE_BYTES
     # grub2-pc is already installed on a BIOS system; only the EFI packages remain.
     assert set(plan.packages_to_install) == {"grub2-efi-x64", "shim-x64"}

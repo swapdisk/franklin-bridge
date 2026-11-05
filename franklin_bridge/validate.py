@@ -86,6 +86,26 @@ def validate(facts, plan):
     else:
         r.add("single_disk", FAIL, _single_disk_failure_message(facts))
 
+    # MBR layout we can safely convert: no extended/logical partitions, and only
+    # partition types we know how to translate to GPT.
+    if facts.dos_extended_present:
+        r.add(
+            "partition_layout", FAIL,
+            "disk has an extended/logical partition, which cannot be safely "
+            "converted (unsupported in this version)",
+        )
+    else:
+        r.add("partition_layout", PASS, "no extended/logical partitions")
+
+    if facts.dos_unsupported_types:
+        r.add(
+            "partition_types", FAIL,
+            "unsupported MBR partition type(s): %s; only Linux, LVM, and swap "
+            "partitions can be converted" % ", ".join(facts.dos_unsupported_types),
+        )
+    else:
+        r.add("partition_types", PASS, "all partition types are convertible")
+
     # Essential tools.
     missing = [t for t in ESSENTIAL_TOOLS if not facts.tools.get(t)]
     if missing:

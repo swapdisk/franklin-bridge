@@ -13,7 +13,7 @@ so nothing is lost or hidden, and a pre-existing EFI stack ends up on the ESP
 where it belongs.
 """
 from .inventory import _part_device
-from .partition import plan_partition_commands
+from .partition import planned_new_partitions
 
 ESP_FSTAB_OPTIONS = "umask=0077,shortname=winnt"
 ORIG_SUFFIX = ".franklin-orig"
@@ -40,8 +40,7 @@ def target_esp_device(facts, plan):
     """The ESP device path: the existing one, or the one Phase 3 will create."""
     if facts.existing_esp is not None:
         return facts.existing_esp.device
-    _, new_parts = plan_partition_commands(facts, plan)
-    for number, role in new_parts:
+    for number, role in planned_new_partitions(facts, plan):
         if role == "esp":
             return _part_device(facts.disk.path, number)
     return None

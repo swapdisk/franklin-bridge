@@ -28,8 +28,7 @@ same converted disk was booted in **Legacy BIOS**, **UEFI**, and **UEFI with
 Secure Boot enabled** (where it self-heals its UEFI boot entry on first boot).
 RHEL **9 and 10** are supported by design: they already ship the unified GRUB2
 config, so the tool's job there is mainly the partition prerequisites, chosen at
-runtime by detecting the current state. **RHEL 7** should work if you have
-python3 installed (e.g., from EPEL), but it's not yet tested.
+runtime by detecting the current state.
 
 - Language: Python **3.6-3.12**, standard library only (no third-party deps).
 - Architecture: **x86_64**.
@@ -44,7 +43,7 @@ refuses to proceed otherwise:
 - The primary disk has a **separate `/boot`** partition and **unpartitioned free
   space at the end of the disk** (~202 MiB is enough for a default ESP; for a VM,
   grow the virtual disk first).
-- Tooling present: `gdisk`/`sgdisk`, `dosfstools`, `parted`, `grub2-*`, and
+- Tooling present: `sfdisk`/`parted` (util-linux), `dosfstools`, `grub2-*`, and
   reachable dnf repositories.
 
 > ⚠️ **WARNING!** ⚠️ 
