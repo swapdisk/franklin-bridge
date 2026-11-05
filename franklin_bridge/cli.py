@@ -213,11 +213,13 @@ def _completion_summary(facts, ok):
                      "(see above). Review before rebooting.")
     lines.append("")
     lines.append("Next steps:")
-    lines.append("  1. Reboot now to finalize the new partition table "
-                 "(the kernel is still using the pre-conversion view).")
+    lines.append("  1. Reboot when convenient to confirm the system boots cleanly "
+                 "with the new layout. This is not strictly required as the new "
+                 "partitions are already registered with the running kernel, but "
+                 "it verifies the boot path while recovery is easy.")
     lines.append("  2. The system will continue to boot in Legacy BIOS mode as "
                  "before.")
-    lines.append("  3. Whenever convenient, switch the firmware from Legacy/BIOS "
+    lines.append("  3. When you are ready, switch the firmware from Legacy/BIOS "
                  "to UEFI. No extra steps are needed: the system boots via the "
                  "EFI fallback and creates its own UEFI boot entry on the first "
                  "UEFI boot.")
