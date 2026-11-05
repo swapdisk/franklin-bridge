@@ -1,0 +1,7 @@
+NAME="Red Hat Enterprise Linux"
+VERSION="10.2 (Coughlan)"
+ID="rhel"
+ID_LIKE="fedora"
+VERSION_ID="10.2"
+PLATFORM_ID="platform:el10"
+PRETTY_NAME="Red Hat Enterprise Linux 10.2 (Coughlan)"

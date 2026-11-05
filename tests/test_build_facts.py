@@ -6,6 +6,7 @@ from franklin_bridge.model import (
     GUID_BIOS_BOOT,
     GUID_ESP,
 )
+from franklin_bridge.partition import planned_new_partitions
 from franklin_bridge.plan import build_plan
 from franklin_bridge.validate import validate
 
@@ -103,6 +104,35 @@ def test_build_facts_thin_lvm_is_single_disk():
 
     # The whole preflight passes for this layout (disk was grown: free at end).
     plan = build_plan(facts)
+    result = validate(facts, plan)
+    assert result.ok, [c for c in result.checks if c.status == FAIL]
+
+
+def test_build_facts_rhel10_luks_gpt_real_capture():
+    # Captured from r10iso (RHEL 10.2, BIOS, GPT, LUKS-on-LVM), ESP removed to
+    # represent the pre-conversion state. Exercises: LUKS ancestry through a
+    # crypt device on REAL data, an existing bios_grub, and the append path.
+    facts = build_facts(load_raw("rhel10_luks_gpt"), EFI_PACKAGES)
+
+    assert facts.env.os_version_major == "10"
+    assert facts.disk.pttype == "gpt"
+    assert facts.boot_part is not None and facts.boot_part.device == "/dev/vda2"
+    # root sits under LUKS; its backing partition is vda3.
+    assert facts.root_part is not None and facts.root_part.device == "/dev/vda3"
+    assert facts.same_disk_boot_and_root is True
+    assert facts.boot_disks == ("/dev/vda",)
+    assert facts.root_disks == ("/dev/vda",)
+    # bios_grub already present; no ESP yet.
+    assert facts.existing_biosboot is not None
+    assert facts.existing_biosboot.parttype == GUID_BIOS_BOOT
+    assert facts.existing_esp is None
+
+    plan = build_plan(facts)
+    assert plan.convert_to_gpt is False          # already GPT
+    assert plan.create_biosboot is None          # exists
+    assert plan.create_esp is not None           # must be appended
+    assert planned_new_partitions(facts, plan) == [(4, "esp")]
+
     result = validate(facts, plan)
     assert result.ok, [c for c in result.checks if c.status == FAIL]
 

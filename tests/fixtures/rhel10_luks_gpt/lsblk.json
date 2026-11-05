@@ -1,0 +1,20 @@
+{
+   "blockdevices": [
+      {"name": "vda", "kname": "vda", "type": "disk", "size": 22548578304, "fstype": null, "uuid": null, "parttype": null, "mountpoint": null, "pkname": null,
+         "children": [
+            {"name": "vda1", "kname": "vda1", "type": "part", "size": 1048576, "fstype": null, "uuid": null, "parttype": "21686148-6449-6e6f-744e-656564454649", "mountpoint": null, "pkname": "vda"},
+            {"name": "vda2", "kname": "vda2", "type": "part", "size": 2147483648, "fstype": "xfs", "uuid": "955016eb-01b2-465c-8659-f9a509962bed", "parttype": "bc13c2ff-59e6-4262-a352-b275fd6f7172", "mountpoint": "/boot", "pkname": "vda"},
+            {"name": "vda3", "kname": "vda3", "type": "part", "size": 19324207104, "fstype": "crypto_LUKS", "uuid": "b2b4d268-3722-42f7-8852-1d50a8a2a301", "parttype": "0fc63daf-8483-4772-8e79-3d69d8477de4", "mountpoint": null, "pkname": "vda",
+               "children": [
+                  {"name": "luks-b2b4d268-3722-42f7-8852-1d50a8a2a301", "kname": "dm-0", "type": "crypt", "size": 19307429888, "fstype": "LVM2_member", "uuid": "4s0K0g-m1PE-YdNo-r3PF-GKX3-L2Ib-gcf0WN", "parttype": null, "mountpoint": null, "pkname": "vda3",
+                     "children": [
+                        {"name": "rhel_r10iso-root", "kname": "dm-1", "type": "lvm", "size": 17158897664, "fstype": "xfs", "uuid": "b4887a58-9bb2-4036-bcda-6a9baa574a0f", "parttype": null, "mountpoint": "/", "pkname": "dm-0"},
+                        {"name": "rhel_r10iso-swap", "kname": "dm-2", "type": "lvm", "size": 2147483648, "fstype": "swap", "uuid": "a23e501c-cda0-410a-b53d-686ad064ec36", "parttype": null, "mountpoint": "[SWAP]", "pkname": "dm-0"}
+                     ]
+                  }
+               ]
+            }
+         ]
+      }
+   ]
+}
