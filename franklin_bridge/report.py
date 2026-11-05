@@ -80,7 +80,6 @@ def render_plan(plan):
         % ("yes" if plan.needs_bios_grub_reinstall else "no")
     )
     lines.append("  Unified-config steps: %s" % ", ".join(plan.unified_config_steps))
-    lines.append("  Reboot required afterward: %s" % ("yes" if plan.reboot_required else "no"))
     return "\n".join(lines)
 
 

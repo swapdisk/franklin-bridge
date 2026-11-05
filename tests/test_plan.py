@@ -25,7 +25,6 @@ def test_plan_standard_creates_everything():
     # grub2-pc is already installed on a BIOS system; only the EFI packages remain.
     assert set(plan.packages_to_install) == {"grub2-efi-x64", "shim-x64"}
     assert plan.needs_bios_grub_reinstall is True
-    assert plan.reboot_required is True
     assert plan.unified_config_steps  # non-empty
 
 

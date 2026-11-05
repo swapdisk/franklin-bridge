@@ -46,5 +46,4 @@ def build_plan(facts, esp_size_bytes=DEFAULT_ESP_SIZE_BYTES):
     plan.needs_bios_grub_reinstall = True
 
     plan.unified_config_steps = list(UNIFIED_STEPS)
-    plan.reboot_required = True
     return plan

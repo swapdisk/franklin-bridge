@@ -159,7 +159,6 @@ class ConversionPlan(object):
         self.packages_to_install = []
         self.needs_bios_grub_reinstall = False
         self.unified_config_steps = []
-        self.reboot_required = True
 
     def __repr__(self):
         return (
