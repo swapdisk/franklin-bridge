@@ -104,6 +104,13 @@ class Executor(object):
         return os.path.islink(path)
 
     @staticmethod
+    def readlink(path):
+        try:
+            return os.readlink(path)
+        except OSError:
+            return None
+
+    @staticmethod
     def ismount(path):
         return os.path.ismount(path)
 

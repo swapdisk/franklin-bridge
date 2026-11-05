@@ -49,7 +49,8 @@ class FakeExecutor(object):
     """Records actions instead of performing them; for testing phase logic."""
 
     def __init__(self, existing=(), files=None, dir_entries=None,
-                 uuid="ABCD-1234", mounted=(), dev_fstype=""):
+                 uuid="ABCD-1234", mounted=(), dev_fstype="",
+                 links=None, grub_dir="/grub2", boot_uuid=None):
         self.dry_run = False
         self.existing = set(existing)
         self.files = dict(files or {})
@@ -57,6 +58,9 @@ class FakeExecutor(object):
         self.uuid = uuid
         self.mounted = set(mounted)
         self.dev_fstype = dev_fstype
+        self.links = dict(links or {})  # path -> symlink target
+        self.grub_dir = grub_dir
+        self.boot_uuid = boot_uuid if boot_uuid is not None else uuid
         self.calls = []  # list of tuples describing each action
 
     def log(self, msg):
@@ -80,6 +84,10 @@ class FakeExecutor(object):
         self.calls.append(("capture", tuple(argv)))
         if "TYPE" in argv:
             return self.dev_fstype + "\n"
+        if "grub2-mkrelpath" in argv:
+            return self.grub_dir + "\n"
+        if "grub2-probe" in argv:
+            return self.boot_uuid + "\n"
         return self.uuid + "\n"
 
     def append_text(self, path, text):
@@ -93,7 +101,10 @@ class FakeExecutor(object):
         return path in self.existing
 
     def islink(self, path):
-        return False
+        return path in self.links
+
+    def readlink(self, path):
+        return self.links.get(path)
 
     def ismount(self, path):
         return path in self.mounted

@@ -26,6 +26,7 @@ from .partition import execute_partitioning
 from .plan import build_plan
 from .probe import Probe
 from .report import render_inventory, render_plan, render_validation
+from .unified import execute_unified_config
 
 
 DEFAULT_BACKUP_DIR = "/var/lib/franklin-bridge"
@@ -137,6 +138,9 @@ def main(argv=None):
         print("")
         print("== BIOS GRUB reinstall (dry-run preview) ==")
         execute_bios_grub(dry, facts, plan)
+        print("")
+        print("== Unified GRUB config (dry-run preview) ==")
+        execute_unified_config(dry, facts, plan)
         return 0
 
     # Apply mode.
@@ -175,8 +179,12 @@ def main(argv=None):
     execute_bios_grub(executor, facts, plan)
 
     print("")
-    print("Note: phases 7-8 are not implemented yet. A reboot will be required "
-          "once the conversion is complete.")
+    print("== Phase 7: unified GRUB config ==")
+    execute_unified_config(executor, facts, plan)
+
+    print("")
+    print("Note: phase 8 (final validation) is not implemented yet. Reboot to "
+          "finish applying the new partition table.")
     return 0
 
 
