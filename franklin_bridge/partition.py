@@ -114,7 +114,10 @@ def execute_partitioning(executor, facts, plan):
         for (_n, role) in new_parts:
             spec = specs_by_role[role]
             executor.log("-> Append %s to the GPT" % spec.name)
-            executor.run_input(["sfdisk", "--append", disk],
+            # --no-reread: the disk has mounted partitions. sfdisk also fixes a
+            # stale backup-GPT header / PMBR size on write, so the space freed by
+            # a disk grow becomes usable.
+            executor.run_input(["sfdisk", "--no-reread", "--append", disk],
                                append_line(spec, sector_size), mutates=True)
 
     # Register only the new partitions with the kernel (existing ones are busy).

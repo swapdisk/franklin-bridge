@@ -77,6 +77,25 @@ def test_execute_convert_path_runs_sfdisk_and_verifies():
     assert set(summary["verified"]) == {"/dev/vda3", "/dev/vda4"}
 
 
+def test_execute_append_path_uses_no_reread():
+    # Already-GPT disk with bios_grub present but no ESP -> append the ESP.
+    facts = make_facts()
+    facts = facts._replace(
+        disk=facts.disk._replace(pttype="gpt"),
+        existing_biosboot=facts.boot_part,  # any non-None: skip creating biosboot
+        existing_esp=None,
+    )
+    plan = build_plan(facts)
+    assert plan.convert_to_gpt is False
+    assert plan.create_biosboot is None
+    assert plan.create_esp is not None
+
+    fe = FakeExecutor(existing={"/dev/vda3"})
+    execute_partitioning(fe, facts, plan)
+    inputs = [c[1] for c in fe.calls if c[0] == "run_input"]
+    assert ("sfdisk", "--no-reread", "--append", "/dev/vda") in inputs
+
+
 def test_execute_resume_appends_only_missing():
     facts = build_facts(load_raw("gpt_converted"), EFI_PACKAGES)
     plan = build_plan(facts)  # already GPT, esp+biosboot exist -> nothing to do
