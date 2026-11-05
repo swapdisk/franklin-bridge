@@ -1,6 +1,4 @@
-# Franklin Bridge — Design
-
-> Status: **draft for discussion** · Last updated: 2026-11-05
+# Franklin Bridge: Design
 
 ## 1. Purpose
 
@@ -54,7 +52,7 @@ branches.
 
 - DOS → GPT conversion in place (`sgdisk`)
 - Create 1 MB **BIOS Boot** partition (`ef02`) + **EFI System Partition**
-  (`ef00`, FAT32, `/boot/efi`) — **default 200 MB**, overridable via a
+  (`ef00`, FAT32, `/boot/efi`), **default 200 MB**, overridable via a
   command-line option (e.g. `--esp-size`)
 - Install/populate shim + `grub2-efi-x64`; reinstall BIOS GRUB
   (`grub2-install --target i386-pc`) so `core.img` lands in the new BIOS Boot
@@ -77,7 +75,7 @@ branches.
 - Running as **root**, and the system is **currently BIOS-booted**
   (`/sys/firmware/efi` absent).
 - The primary disk has a **DOS** partition table with **unpartitioned free
-  space** — enough for the BIOS Boot + ESP partitions, plus slack at the end of
+  space**, enough for the BIOS Boot + ESP partitions, plus slack at the end of
   the disk for the secondary GPT header/table. (Operator grew the disk first.)
 - Standard RHEL layout: a separate `/boot` partition; root on LVM. We do **not**
   move or resize existing partitions.
@@ -88,10 +86,10 @@ branches.
 
 ```
 GPT disk:
-  ├─ BIOS Boot partition   (~1 MB,   type ef02, no filesystem)
-  ├─ EFI System Partition  (~200 MB, type ef00, FAT32, mounted /boot/efi)
   ├─ /boot                 (unchanged)
-  └─ LVM PV                (unchanged: root + swap)
+  ├─ LVM PV                (unchanged: root + swap)
+  ├─ BIOS Boot partition   (~1 MB,   type ef02, no filesystem)
+  └─ EFI System Partition  (~200 MB, type ef00, FAT32, mounted /boot/efi)
 
 /boot/grub2/grub.cfg           <- REAL config
 /boot/grub2/grubenv            <- real file (not a symlink)
@@ -116,30 +114,30 @@ Each phase is independently testable and ordered so a failure leaves a
 recoverable state. Phases run top-to-bottom; each is idempotent and re-checks
 whether its end-state already holds.
 
-1. [**Preflight & inventory**](phase1.md) — detect boot mode, primary disk,
+1. [**Preflight & inventory**](phase1.md): detect boot mode, primary disk,
    partition table type, filesystem/LVM layout, free space, and required tools.
    Compute the partition plan (sizes, order, free-space placement). Refuse to
    proceed on any unmet precondition with an actionable message.
-2. [**Backup & safety net**](phase2.md) — save the partition table
+2. [**Backup & safety net**](phase2.md): save the partition table
    (`sgdisk --backup`), `/etc/fstab`, and existing GRUB configs to a timestamped
    backup dir; record a rollback note.
-3. [**Partition surgery**](phase3.md) — `sgdisk -g` (DOS→GPT); create `ef02`
+3. [**Partition surgery**](phase3.md): `sgdisk -g` (DOS→GPT); create `ef02`
    (BIOS Boot) and `ef00` (ESP) in free space; register new partitions with the
    kernel (`partx -a <disk>`), noting that full table re-read is deferred to
    reboot.
-4. [**ESP filesystem & mount**](phase4.md) — `mkfs.vfat -F32` on the ESP; create
+4. [**ESP filesystem & mount**](phase4.md): `mkfs.vfat -F32` on the ESP; create
    `/boot/efi`; add an fstab entry by UUID; mount it.
-5. [**EFI stack population**](phase5.md) — install `shim-x64` + `grub2-efi-x64`
+5. [**EFI stack population**](phase5.md): install `shim-x64` + `grub2-efi-x64`
    (ensure `grub2-pc` present); verify `/boot/efi/EFI/redhat` is populated; set up
    the `\EFI\BOOT` fallback (`BOOTX64.EFI`, `fbx64.efi`).
-6. [**BIOS GRUB reinstall**](phase6.md) — `grub2-install --target i386-pc <disk>`
+6. [**BIOS GRUB reinstall**](phase6.md): `grub2-install --target i386-pc <disk>`
    (now succeeds because the BIOS Boot partition exists).
-7. [**Unified GRUB2 config**](phase7.md) — write the bootstrap `grub.cfg` on the
+7. [**Unified GRUB2 config**](phase7.md): write the bootstrap `grub.cfg` on the
    ESP; ensure `grubenv` is a real file in `/boot/grub2`; fix `/etc/grub2*.cfg`
    symlinks; `grub2-mkconfig -o /boot/grub2/grub.cfg`.
-8. [**Validate & report**](phase8.md) — verify layout, configs, and bootability
-   signals; print a summary, the **reboot-required** notice, and how to later
-   flip the firmware to UEFI.
+8. [**Validate & report**](phase8.md): verify layout, configs, and bootability
+   signals; print a summary, a recommendation to reboot to confirm a clean boot
+   (not strictly required), and how to later flip the firmware to UEFI.
 
 ## 7. Architecture (code structure)
 
@@ -150,31 +148,31 @@ whether its end-state already holds.
   state-changing commands, honoring `--dry-run` and centralizing logging. Living
   behind this boundary is what will let a future **rescue-media** mode slot in
   without rewriting the logic.
-- **Orchestrator:** runs phases 1–8, each guarded by an idempotency check.
+- **Orchestrator:** runs phases 1-8, each guarded by an idempotency check.
 
 ## 8. Cross-cutting concerns
 
 - **`--dry-run`** prints every action without mutating anything.
-- **Idempotency** — safe to re-run after a partial failure; each phase detects an
+- **Idempotency:** safe to re-run after a partial failure; each phase detects an
   already-satisfied end-state and skips.
-- **Live-disk caveat** — existing partitions cannot be re-read while mounted; the
+- **Live-disk caveat:** existing partitions cannot be re-read while mounted; the
   tool states this and requires a reboot to finalize.
-- **Logging & reporting** — structured, human-readable progress; a final summary
+- **Logging & reporting:** structured, human-readable progress; a final summary
   with next steps.
 
 ## 9. Testing strategy
 
 - **Unit tests (in this repo)** for all pure logic (parsers, planner, config
-  renderers) across Python 3.6–3.12. These are hermetic — no VM, no RHEL
-  content, runnable anywhere — and are the primary feedback loop.
-- **Full dual-firmware acceptance** — the real proof is that a converted disk
+  renderers) across Python 3.6-3.12. These are hermetic (no VM, no RHEL
+  content, runnable anywhere) and are the primary feedback loop.
+- **Full dual-firmware acceptance:** the real proof is that a converted disk
   boots under both legacy BIOS and UEFI firmware. This requires real-world RHEL
   instances running on your organization's actual infrastructure, be that bare
   metal or virtual, KVM or VMware, etc.
 
 ## 10. Open questions / future work
 
-- ~~ESP size default~~ — **resolved**: default 200 MB, overridable via
+- ~~ESP size default~~ (**resolved**): default 200 MB, overridable via
   `--esp-size`.
 - aarch64 support.
 - Rescue-media execution mode.
