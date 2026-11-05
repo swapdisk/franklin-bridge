@@ -42,6 +42,7 @@ def test_main_healthy_returns_zero(monkeypatch, capsys):
     assert "Backup (dry-run preview)" in out
     assert "Partitioning (dry-run preview)" in out
     assert "ESP filesystem & mount (dry-run preview)" in out
+    assert "Validation (dry-run preview)" in out
 
 
 def test_main_apply_without_confirmation_aborts(monkeypatch, capsys):

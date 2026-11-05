@@ -84,16 +84,16 @@ def render_plan(plan):
     return "\n".join(lines)
 
 
-def render_validation(result):
-    lines = ["== Preflight checks =="]
+def render_validation(result, title="Preflight checks", verb="Preflight"):
+    lines = ["== %s ==" % title]
     for c in result.checks:
-        lines.append("  %s %-16s %s" % (_STATUS_MARK.get(c.status, "[????]"),
+        lines.append("  %s %-20s %s" % (_STATUS_MARK.get(c.status, "[????]"),
                                         c.name, c.message))
     lines.append("")
     if result.ok:
-        lines.append("Preflight PASSED." if not result.warnings
-                     else "Preflight PASSED with warnings.")
+        lines.append("%s PASSED." % verb if not result.warnings
+                     else "%s PASSED with warnings." % verb)
     else:
-        lines.append("Preflight FAILED: %d problem(s) must be resolved."
-                     % len(result.failures))
+        lines.append("%s FAILED: %d problem(s) must be resolved."
+                     % (verb, len(result.failures)))
     return "\n".join(lines)

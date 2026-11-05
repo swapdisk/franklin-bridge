@@ -27,6 +27,7 @@ from .plan import build_plan
 from .probe import Probe
 from .report import render_inventory, render_plan, render_validation
 from .unified import execute_unified_config
+from .verify import execute_validation
 
 
 DEFAULT_BACKUP_DIR = "/var/lib/franklin-bridge"
@@ -141,6 +142,9 @@ def main(argv=None):
         print("")
         print("== Unified GRUB config (dry-run preview) ==")
         execute_unified_config(dry, facts, plan)
+        print("")
+        print("== Validation (dry-run preview) ==")
+        execute_validation(dry, facts, plan)
         return 0
 
     # Apply mode.
@@ -183,14 +187,41 @@ def main(argv=None):
     execute_unified_config(executor, facts, plan)
 
     print("")
-    print("Note: phase 8 (final validation) is not implemented yet. Reboot to "
-          "finish applying the new partition table.")
-    return 0
+    print("== Phase 8: validate & report ==")
+    result = execute_validation(executor, facts, plan)
+    print("")
+    print(render_validation(result, title="End-state validation",
+                            verb="Validation"))
+
+    print("")
+    print(_completion_summary(facts, result.ok))
+    return 0 if result.ok else 1
 
 
 def validate_facts(facts, plan):
     from .validate import validate
     return validate(facts, plan)
+
+
+def _completion_summary(facts, ok):
+    lines = []
+    if ok:
+        lines.append("Conversion complete: %s is now configured for hybrid "
+                     "BIOS/UEFI boot." % facts.disk.path)
+    else:
+        lines.append("Conversion ran but end-state validation found problems "
+                     "(see above). Review before rebooting.")
+    lines.append("")
+    lines.append("Next steps:")
+    lines.append("  1. Reboot now to finalize the new partition table "
+                 "(the kernel is still using the pre-conversion view).")
+    lines.append("  2. The system will continue to boot in Legacy BIOS mode as "
+                 "before.")
+    lines.append("  3. Whenever convenient, switch the firmware from Legacy/BIOS "
+                 "to UEFI. No extra steps are needed: the system boots via the "
+                 "EFI fallback and creates its own UEFI boot entry on the first "
+                 "UEFI boot.")
+    return "\n".join(lines)
 
 
 if __name__ == "__main__":
