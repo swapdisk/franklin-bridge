@@ -49,7 +49,7 @@ refuses to proceed otherwise:
 > ⚠️ **WARNING!** ⚠️ 
 > **This tool rewrites your partition table and bootloader.** It saves a
 > copy first, but you should **snapshot or back up the machine** and try it on
-> a disposable iinstance before running it on anything you care about.
+> a disposable instance before running it on anything you care about.
 
 ## Usage
 
